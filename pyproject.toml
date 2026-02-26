@@ -1,0 +1,10 @@
+[project]
+name = "m9-ticket-system"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.133.1",
+    "sqlmodel>=0.0.37",
+]

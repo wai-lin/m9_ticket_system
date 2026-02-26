@@ -2,6 +2,11 @@
 
 A minimal MVP demonstrating database transactions and resource contention.
 
+## TeamMembers
+
+- Wai Lin Aung
+- Tom Everson
+
 ## Overview
 
 Users compete to purchase tickets from a limited inventory. The system ensures data consistency through ACID transactions, preventing overselling and race conditions.

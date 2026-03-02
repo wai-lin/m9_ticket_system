@@ -1,7 +1,6 @@
 from sqlmodel import Session, select
 from models.main import User, Ticket, Seat, Payment, PaymentTicket
-from database import engine
-
+from src.database import engine
 
 
 # --- Operation 1: Create a User ---
@@ -18,8 +17,7 @@ def create_user(name: str, email: str, password: str):
 def get_available_seats(instance_id: int):
     with Session(engine) as session:
         statement = select(Seat).where(
-            Seat.instance_id == instance_id,
-            Seat.status == "available"
+            Seat.instance_id == instance_id, Seat.status == "available"
         )
         return session.exec(statement).all()
 
@@ -43,7 +41,9 @@ def purchase_ticket(user_id: int, seat_id: int):
 
             # 3. Create Ticket
             # In a real app, we'd calculate price based on FlightInstance + base_price
-            new_ticket = Ticket(user_id=user_id, seat_id=seat_id, price=450.0, status="confirmed")
+            new_ticket = Ticket(
+                user_id=user_id, seat_id=seat_id, price=450.0, status="confirmed"
+            )
             session.add(new_ticket)
             session.commit()  # Commit here to get the ticket ID
 

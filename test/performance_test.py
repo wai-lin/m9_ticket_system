@@ -1,6 +1,6 @@
 import time
-from models.main import User
-from database import engine
+from src.models.main import User
+from src.database import engine
 from sqlmodel import Session
 
 def run_performance_test(n=1000):

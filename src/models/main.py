@@ -16,16 +16,16 @@ class Airport(SQLModel, table=True):
         back_populates="departure_airport",
         sa_relationship_kwargs={
             "primaryjoin": "Airport.id==Flight.departure_airport_id",
-            "lazy": "selectin"
-        }
+            "lazy": "selectin",
+        },
     )
     # Tell SQLModel to use the arrival_airport_id column for this list
     flights_arrival: list["Flight"] = Relationship(
         back_populates="arrival_airport",
         sa_relationship_kwargs={
             "primaryjoin": "Airport.id==Flight.arrival_airport_id",
-            "lazy": "selectin"
-        }
+            "lazy": "selectin",
+        },
     )
 
 
@@ -41,11 +41,11 @@ class Flight(SQLModel, table=True):
     # Explicitly link the back-references
     departure_airport: Airport = Relationship(
         back_populates="flights_departure",
-        sa_relationship_kwargs={"foreign_keys": "[Flight.departure_airport_id]"}
+        sa_relationship_kwargs={"foreign_keys": "[Flight.departure_airport_id]"},
     )
     arrival_airport: Airport = Relationship(
         back_populates="flights_arrival",
-        sa_relationship_kwargs={"foreign_keys": "[Flight.arrival_airport_id]"}
+        sa_relationship_kwargs={"foreign_keys": "[Flight.arrival_airport_id]"},
     )
 
     flight_instances: list["FlightInstance"] = Relationship(back_populates="flight")

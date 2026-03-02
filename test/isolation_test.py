@@ -1,5 +1,5 @@
 import threading
-from operation import purchase_ticket
+from src.operation import purchase_ticket
 
 
 def run_isolation_test(user_a_id, user_b_id, target_seat_id):

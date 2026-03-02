@@ -1,37 +1,33 @@
 import os
-from sqlalchemy.pool import StaticPool
 from sqlmodel import create_engine, Session, SQLModel
+from dotenv import load_dotenv
+import models
 
-# Database URL from environment or default SQLite for development
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///database.db")
+load_dotenv()
 
-# Create engine with appropriate pool settings
-# For SQLite, use StaticPool and check_same_thread=False
-engine_kwargs = {}
-if DATABASE_URL.startswith("sqlite"):
-    engine_kwargs = {
-        "connect_args": {"check_same_thread": False},
-        "poolclass": StaticPool,
-    }
+DATABASE_URL = os.getenv("DB_URL")
 
 engine = create_engine(
     DATABASE_URL,
-    echo=True,  # Set to False in production
-    **engine_kwargs,
+    echo=True,           # Useful for debugging SQL queries
+    future=True,         # Ensures SQLAlchemy 2.0 compatibility
+    pool_size=10,        # Keeps 10 connections ready
+    max_overflow=20      # Allows up to 20 extra connections during spikes
 )
 
-
 def create_db_tables():
-    """Create all database tables"""
+    """Requirement 1 & 2: Create necessary tables in Postgres"""
+    # Note: Ensure the database 'flight_db' exists before running this.
     SQLModel.metadata.create_all(engine)
 
-
 def get_session():
-    """Get a database session"""
+    """Get a database session for business operations"""
     with Session(engine) as session:
         yield session
 
-
 def init_db():
-    """Initialize the database"""
+    """Initialize the database schema"""
     create_db_tables()
+
+if __name__ == "__main__":
+    init_db()

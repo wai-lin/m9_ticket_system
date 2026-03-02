@@ -18,7 +18,6 @@ Users compete to purchase tickets from a limited inventory. The system ensures d
 - **Race Condition Handling**: Prevents double-booking through locking/serialization
 
 ```mermaid
-
 erDiagram
     Airports ||--o{ Flights: has_many
     Flights ||--o{ FlightInstances: has_many

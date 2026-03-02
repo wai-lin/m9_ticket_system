@@ -1,9 +1,9 @@
 import os
 from sqlmodel import create_engine, Session, SQLModel
 
-# PostgreSQL connection: postgres user with empty password
+# PostgreSQL connection: postgres user with password
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://postgres@localhost/ticket_system"
+    "DATABASE_URL", "postgresql://postgres:postgres@localhost/ticket_system"
 )
 
 engine = create_engine(

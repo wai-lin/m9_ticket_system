@@ -1,11 +1,11 @@
 from sqlmodel import Session
 from models.main import User, Airport, Flight, Seat, FlightInstance
-from src.database import engine
+from database import engine
 from datetime import datetime, timedelta
 
 
 def populate_sample_data():
-    """Requirement 3: Extensive sample data population"""
+    """Extensive sample data population"""
     with Session(engine) as session:
         # 1. Add Multiple Airports
         airports = [

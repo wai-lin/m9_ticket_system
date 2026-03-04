@@ -41,14 +41,16 @@ class Flight(SQLModel, table=True):
     # Explicitly link the back-references
     departure_airport: Airport = Relationship(
         back_populates="flights_departure",
-        sa_relationship_kwargs={"foreign_keys": "[Flight.departure_airport_id]"},
+        sa_relationship_kwargs={
+            "foreign_keys": "[Flight.departure_airport_id]"},
     )
     arrival_airport: Airport = Relationship(
         back_populates="flights_arrival",
         sa_relationship_kwargs={"foreign_keys": "[Flight.arrival_airport_id]"},
     )
 
-    flight_instances: list["FlightInstance"] = Relationship(back_populates="flight")
+    flight_instances: list["FlightInstance"] = Relationship(
+        back_populates="flight")
 
 
 # ===== FlightInstances =====
@@ -108,7 +110,8 @@ class Ticket(SQLModel, table=True):
     # Relationships
     user: User = Relationship(back_populates="tickets")
     seat: Seat = Relationship(back_populates="ticket")
-    payment_tickets: list["PaymentTicket"] = Relationship(back_populates="ticket")
+    payment_tickets: list["PaymentTicket"] = Relationship(
+        back_populates="ticket")
 
 
 # ===== Payments =====
@@ -123,7 +126,8 @@ class Payment(SQLModel, table=True):
 
     # Relationships
     user: User = Relationship(back_populates="payments")
-    payment_tickets: list["PaymentTicket"] = Relationship(back_populates="payment")
+    payment_tickets: list["PaymentTicket"] = Relationship(
+        back_populates="payment")
 
 
 # ===== PaymentTickets (Junction Table) =====

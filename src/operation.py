@@ -1,6 +1,7 @@
-from sqlmodel import Session, select
+from sqlmodel import Session, select, text
 from src.models.main import User, Ticket, Seat, Payment, PaymentTicket
-from src.database import engine
+from src.database import engine, DB_SCHEMA
+import time
 
 
 # --- Operation 1: Create a User ---
@@ -23,15 +24,15 @@ def get_available_seats(instance_id: int):
 
 
 # --- Operation 3: The Purchase Flow (Atomic) ---
-def purchase_ticket(user_id: int, seat_id: int):
+def purchase_ticket_without_lock(user_id: int, seat_id: int):
     """
-    Atomic operation: Reserves seat, creates ticket, and logs payment.
-    If any step fails, the transaction rolls back.
+    Atomic operation WITHOUT lock: Demonstrates race condition vulnerability.
+    Multiple users can book the same seat simultaneously.
     """
     with Session(engine) as session:
         try:
-            # 1. Fetch seat with FOR UPDATE lock to prevent race conditions
-            statement = select(Seat).where(Seat.id == seat_id).with_for_update()
+            # 1. Fetch seat WITHOUT lock - use fresh SELECT (not cached get)
+            statement = select(Seat).where(Seat.id == seat_id)
             seat = session.exec(statement).first()
             if not seat or seat.status != "available":
                 raise Exception("Seat is no longer available.")
@@ -48,7 +49,55 @@ def purchase_ticket(user_id: int, seat_id: int):
             session.add(new_ticket)
 
             # 4. Create Payment record
-            payment = Payment(user_id=user_id, total_price=450.0, status="completed")
+            payment = Payment(
+                user_id=user_id, total_price=450.0, status="completed")
+            session.add(payment)
+
+            # 5. Link Payment to Ticket (Junction Table)
+            link = PaymentTicket(payment=payment, ticket=new_ticket)
+            session.add(link)
+
+            # Commit everything at once
+            session.commit()
+            print(
+                f"Successfully booked seat {seat.seat_number} for user {user_id}")
+            return new_ticket
+
+        except Exception as e:
+            session.rollback()  # Undo everything if an error occurs
+            print(f"Booking failed: {e}")
+            return None
+
+
+# --- Operation 3: The Purchase Flow (Atomic) ---
+def purchase_ticket_with_lock(user_id: int, seat_id: int):
+    """
+    Atomic operation: Reserves seat, creates ticket, and logs payment.
+    If any step fails, the transaction rolls back.
+    """
+    with Session(engine) as session:
+        try:
+            # 1. Fetch seat with FOR UPDATE lock to prevent race conditions
+            statement = select(Seat).where(
+                Seat.id == seat_id).with_for_update()
+            seat = session.exec(statement).first()
+            if not seat or seat.status != "available":
+                raise Exception("Seat is no longer available.")
+
+            # 2. Update seat status
+            seat.status = "occupied"
+            session.add(seat)
+
+            # 3. Create Ticket
+            # In a real app, we'd calculate price based on FlightInstance + base_price
+            new_ticket = Ticket(
+                user_id=user_id, seat_id=seat_id, price=450.0, status="confirmed"
+            )
+            session.add(new_ticket)
+
+            # 4. Create Payment record
+            payment = Payment(
+                user_id=user_id, total_price=450.0, status="completed")
             session.add(payment)
 
             # 5. Link Payment to Ticket (Junction Table)
@@ -57,7 +106,8 @@ def purchase_ticket(user_id: int, seat_id: int):
 
             # Commit everything at once - ensures atomicity
             session.commit()
-            print(f"Successfully booked seat {seat.seat_number} for user {user_id}")
+            print(
+                f"Successfully booked seat {seat.seat_number} for user {user_id}")
             return new_ticket
 
         except Exception as e:
@@ -81,3 +131,14 @@ def cancel_booking(ticket_id: int):
             session.commit()
             return True
         return False
+
+
+# --- Operation 5: Truncate User Table ---
+def truncate_users():
+    """Truncate user table and reset ID sequence to 1"""
+    with Session(engine) as session:
+        # Use raw SQL to truncate and reset sequence with schema prefix
+        session.exec(
+            text(f'TRUNCATE TABLE {DB_SCHEMA}."user" RESTART IDENTITY CASCADE'))
+        session.commit()
+        print("User table truncated and ID sequence reset to 1")

@@ -3,7 +3,7 @@ from src.operation import purchase_ticket
 
 
 def run_isolation_test(user_a_id, user_b_id, target_seat_id):
-    """Requirement 6: Test if parallel execution leads to double-booking"""
+    """Test if parallel execution leads to double-booking"""
     results = []
 
     def attempt_booking(user_id):
@@ -26,12 +26,17 @@ def run_isolation_test(user_a_id, user_b_id, target_seat_id):
 
     # Analyze results
     successes = [r for r in results if r is not None]
-
+    print("==============================")
     print("\n--- Isolation Test Results ---")
     print(f"Total attempts: 2")
     print(f"Successful bookings: {len(successes)}")
 
     if len(successes) == 1:
         print("✅ PASS: System prevented double-booking.")
-    else:
+    elif len(successes) == 2:
         print("❌ FAIL: System allowed multiple bookings for one seat!")
+    else:
+        print("⚠️  Both bookings failed - check logs for database errors")
+
+    print("==============================")
+    print("==============================")

@@ -30,8 +30,9 @@ def purchase_ticket(user_id: int, seat_id: int):
     """
     with Session(engine) as session:
         try:
-            # 1. Fetch seat and check availability
-            seat = session.get(Seat, seat_id)
+            # 1. Fetch seat with FOR UPDATE lock to prevent race conditions
+            statement = select(Seat).where(Seat.id == seat_id).with_for_update()
+            seat = session.exec(statement).first()
             if not seat or seat.status != "available":
                 raise Exception("Seat is no longer available.")
 
@@ -45,17 +46,16 @@ def purchase_ticket(user_id: int, seat_id: int):
                 user_id=user_id, seat_id=seat_id, price=450.0, status="confirmed"
             )
             session.add(new_ticket)
-            session.commit()  # Commit here to get the ticket ID
 
             # 4. Create Payment record
             payment = Payment(user_id=user_id, total_price=450.0, status="completed")
             session.add(payment)
-            session.commit()
 
             # 5. Link Payment to Ticket (Junction Table)
-            link = PaymentTicket(payment_id=payment.id, ticket_id=new_ticket.id)
+            link = PaymentTicket(payment=payment, ticket=new_ticket)
             session.add(link)
 
+            # Commit everything at once - ensures atomicity
             session.commit()
             print(f"Successfully booked seat {seat.seat_number} for user {user_id}")
             return new_ticket

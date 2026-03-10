@@ -1,4 +1,4 @@
-from test.isolation_test import run_isolation_test_with_lock, run_isolation_test_without_lock
+from test.isolation_test import run_isolation_test_forced_race_condition, run_isolation_test_with_lock, run_isolation_test_without_lock
 from test.performance_test import run_performance_test, run_concurrent_performance_test
 from src.database import init_db
 from src.operation import truncate_users
@@ -34,6 +34,8 @@ if __name__ == "__main__":
     # ==============================
     # ==============================
 
-    run_isolation_test_without_lock(user_a_id=1, user_b_id=2, target_seat_id=5)
+    run_isolation_test_forced_race_condition(1, 2, 10)
+
+    # run_isolation_test_without_lock(user_a_id=1, user_b_id=2, target_seat_id=12)
 
     # run_isolation_test_with_lock(user_a_id=1, user_b_id=2, target_seat_id=4)

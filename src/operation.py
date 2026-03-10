@@ -37,6 +37,11 @@ def purchase_ticket_without_lock(user_id: int, seat_id: int):
             if not seat or seat.status != "available":
                 raise Exception("Seat is no longer available.")
 
+            # --- SIMULATE CONCURRENCY DELAY ---
+            # This allows other threads to read 'available' before we commit 'occupied'
+            print(f"User {user_id} detected seat {seat_id} is available. Pausing...")
+            time.sleep(1)
+
             # 2. Update seat status
             seat.status = "occupied"
             session.add(seat)

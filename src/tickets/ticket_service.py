@@ -4,8 +4,8 @@ from src.database import engine
 import time
 
 
-class TicketRepository:
-    """Data access layer for Ticket operations"""
+class TicketService:
+    """Ticket operations (data access layer)"""
 
     @staticmethod
     def get_available_seats(instance_id: int) -> list[Seat]:

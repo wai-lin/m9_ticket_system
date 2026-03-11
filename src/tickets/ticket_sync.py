@@ -1,19 +1,14 @@
-import time
 import redis.asyncio as redis
+import time
 
-# --- Hybrid Persistence Pattern ---
 
-
-async def run_hybrid_ingestion_test(r: redis.Redis, count: int):
+async def insert_seats_hybrid(r: redis.Redis, count: int) -> float:
     """
-    Task 1-2: Hybrid Ingestion Test.
-    Achieves >10k RPS using a single high-concurrency pipeline.
-    This avoids 'parallel execution' (multiple workers) while
-    maintaining single-record operations (one HSET per ticket).
+    Task 1-2: Hybrid insert - high RPS with sync marking.
+    Returns: RPS
     """
-    print(f"\n--- Starting Hybrid Ingestion Test ({count} operations) ---")
+    print(f"\n--- Hybrid Insert Test ({count} operations) ---")
 
-    # Pre-generate data
     data_list = [
         {"id": f"h_{i}", "user_id": "1",
             "seat_id": str(i % 100), "price": "450.0"}
@@ -22,17 +17,12 @@ async def run_hybrid_ingestion_test(r: redis.Redis, count: int):
 
     start_time = time.perf_counter()
 
-    # We use a single pipeline to send all commands.
-    # This is concurrent at the network layer but sequential in code flow.
     pipe = r.pipeline(transaction=False)
     for item in data_list:
         key = f"sync_pending:ticket:{item['id']}"
-        # Operation 1: Store the record
         pipe.hset(key, mapping=item)
-        # Operation 2: Mark for sync (This makes it 'Hybrid')
         pipe.sadd("tickets_to_sync", key)
 
-    # Execute everything in one go
     await pipe.execute()
 
     duration = time.perf_counter() - start_time
@@ -43,16 +33,14 @@ async def run_hybrid_ingestion_test(r: redis.Redis, count: int):
     return rps
 
 
-# --- Task 3-4: Hybrid Update Pattern (Redis + Postgres) ---
-
-async def run_hybrid_update_rps_test(r: redis.Redis, seat_count: int, user_count: int):
+async def update_seats_hybrid(r: redis.Redis, seat_count: int, user_count: int) -> dict:
     """
-    Task 3-4: Hybrid Update Test - Concurrent reservations with dual-write.
-    Writes to Redis for high RPS + marks for Postgres sync.
+    Task 3-4: Hybrid update - concurrent reservations with sync marking.
+    Returns: dict with results
     """
-    print(f"\n--- Starting Hybrid Update Test ({seat_count} seats, {user_count} users) ---")
+    print(f"\n--- Hybrid Update Test ({seat_count} seats, {user_count} users) ---")
 
-    # Pre-populate Redis with available seats
+    # Pre-populate seats
     start_populate = time.perf_counter()
     pipe = r.pipeline(transaction=False)
     for i in range(seat_count):
@@ -66,7 +54,7 @@ async def run_hybrid_update_rps_test(r: redis.Redis, seat_count: int, user_count
     populate_time = time.perf_counter() - start_populate
     print(f"Populated {seat_count} seats in {populate_time:.2f}s")
 
-    # Hybrid Lua script: Reserve AND mark for sync in single atomic operation
+    # Hybrid Lua script
     HYBRID_RESERVE_SCRIPT = """
     local seat_key = KEYS[1]
     local user_id = ARGV[1]
@@ -93,7 +81,7 @@ async def run_hybrid_update_rps_test(r: redis.Redis, seat_count: int, user_count
     end
     """
 
-    # Simulate concurrent reservation attempts
+    # Simulate reservations
     start_reserve = time.perf_counter()
     successful = 0
     failed = 0
@@ -126,3 +114,39 @@ async def run_hybrid_update_rps_test(r: redis.Redis, seat_count: int, user_count
         "failed": failed,
         "rps": reserve_rps
     }
+
+
+async def sync_seats_to_postgres(r: redis.Redis, sync_key: str = 'seats_to_sync') -> int:
+    """
+    Sync reserved/confirmed seats from Redis to Postgres.
+    Reads from sync set and persists to database.
+    """
+    from sqlmodel import Session
+    from src.database import engine
+    from src.models.main import Seat
+    
+    with Session(engine) as session:
+        seats_to_sync = await r.smembers(sync_key)
+        
+        synced_count = 0
+        for seat_key in seats_to_sync:
+            seat_data = await r.hgetall(seat_key)
+            if not seat_data:
+                continue
+                
+            seat_id = int(seat_data.get(b'seat_id', b'0').decode())
+            status = seat_data.get(b'status', b'available').decode()
+            
+            seat = session.get(Seat, seat_id)
+            if seat:
+                seat.status = status
+                session.add(seat)
+                synced_count += 1
+        
+        session.commit()
+        
+        if seats_to_sync:
+            await r.delete(sync_key)
+            
+        print(f"Synced {synced_count} seats to Postgres")
+        return synced_count

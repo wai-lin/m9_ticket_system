@@ -28,7 +28,7 @@ async def setup_for_oltp_tests():
 
     print("[Setup] Creating flight infrastructure...")
     instance_id, first_seat_id = run_seeder()
-    print(f"[Setup] Flight ready (ID: {instance_id}, 100 seats).\n")
+    print(f"[Setup] Flight ready (ID: {instance_id} ... 100 seats).\n")
     return instance_id, first_seat_id
 
 
@@ -42,7 +42,14 @@ async def setup_for_high_traffic_tests():
 
     print("[Setup] Creating flight infrastructure...")
     instance_id, first_seat_id = run_seeder()
-    print(f"[Setup] Flight ready (ID: {instance_id}, 100 seats).\n")
+    print(f"[Setup] Flight ready (ID: {instance_id} ... 100 seats).")
+
+    # Pre-create users for the test (required for Payment foreign key)
+    print("[Setup] Creating test users...")
+    for user_id in range(1, 1001):  # Create 1000 users
+        UserService.create_user(f"user{user_id}", f"user{user_id}@test.com")
+    print(f"[Setup] Created 1000 test users.\n")
+
     return instance_id, first_seat_id
 
 
@@ -136,7 +143,7 @@ async def task3_test3_high_traffic():
     print("="*60)
 
     instance_id, first_seat_id = await setup_for_high_traffic_tests()
-    results = await test_high_traffic_purchasing(num_users=1000, seats_available=100)
+    results = await test_high_traffic_purchasing(instance_id=instance_id, num_users=1000, seats_available=100)
     print(
         f"✓ High-Traffic Test Complete: {results['throughput']:.2f} purchases/sec\n")
 
@@ -151,24 +158,24 @@ async def run_task3_tests():
 async def main():
     """Main entry point"""
 
-    init_db()
+    print("\n" + "="*60)
+    print("TICKET SYSTEM")
+    print("="*60)
+
+    # init_db()
 
     # TASK 2: OLTP Tests
     # await task2_test1_sync_user_insert()
     # await task2_test2_concurrent_user_insert()
-    await task2_test3_race_condition()
+    # await task2_test3_race_condition()
     # await task2_test4_lock_solution()
 
     # TASK 3: High-RPS & Caching Tests
-    # await run_task3_tests()
-    # await task3_test3_high_traffic()  # Run individually if desired
+    await run_task3_tests()
+    # await task3_test3_high_traffic()
 
     print("="*60 + "\n")
 
 
 if __name__ == "__main__":
-    print("\n" + "="*60)
-    print("TICKET SYSTEM")
-    print("="*60)
-
     asyncio.run(main())

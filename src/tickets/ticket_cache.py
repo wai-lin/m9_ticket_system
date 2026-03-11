@@ -65,7 +65,10 @@ async def update_seats_pipelined(seat_count: int, user_count: int) -> dict:
         for user_id in range(user_count):
             seat_id = user_id % seat_count
             seat_key = f"seat:{seat_id}"
-            pipe.hset(seat_key, "status", "occupied", "user_id", str(user_id))
+            pipe.hset(seat_key, mapping={
+                "status": "occupied",
+                "user_id": str(user_id)
+            })
 
         await pipe.execute()
 

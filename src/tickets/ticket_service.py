@@ -87,11 +87,17 @@ class TicketService:
                 session.add(link)
 
                 session.commit()
-                return new_ticket
-
+                # Must capture ID before session closes (object becomes detached)
+                ticket_id = new_ticket.id
+                
             except Exception as e:
                 session.rollback()
+                # Silently fail on seat unavailable (expected during high load)
                 return None
+        
+        # Create a simple dict representation to return
+        # We can't return the ORM object as it's detached
+        return {"id": ticket_id, "user_id": user_id, "seat_id": seat_id, "status": "confirmed"}
 
     @staticmethod
     def cancel_booking(ticket_id: int):
@@ -120,15 +126,18 @@ class TicketService:
         """
         
         # Step 1: Write to Postgres with lock (authoritative)
-        ticket = TicketService.purchase_ticket_with_lock(user_id, seat_id)
+        result = TicketService.purchase_ticket_with_lock(user_id, seat_id)
         
-        if not ticket:
+        if not result:
             return {"success": False, "ticket_id": None, "cached": False}
+        
+        # Result is now a dict, extract ticket_id
+        ticket_id = result["id"]
         
         # Step 2: Update Redis cache asynchronously
         try:
             r = await get_redis()
-            await r.hset(f"ticket:{ticket.id}", mapping={
+            await r.hset(f"ticket:{ticket_id}", mapping={
                 "user_id": str(user_id),
                 "seat_id": str(seat_id),
                 "status": "confirmed",
@@ -141,7 +150,7 @@ class TicketService:
         
         return {
             "success": True,
-            "ticket_id": ticket.id,
+            "ticket_id": ticket_id,
             "cached": cached
         }
 

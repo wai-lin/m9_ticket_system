@@ -8,11 +8,12 @@ async def insert_seats_pipelined(total_count: int, chunk_size: int = 1000) -> fl
     Insert performance test with pipelining.
     Returns: RPS (requests per second)
     """
-    print(f"\n--- Pipelined Insert Test ({total_count} records) ---")
     r = await get_redis()
 
+    print(f"Inserting {total_count} seats to Redis with chunking {chunk_size}...")
+
     try:
-        data_list = [{"id": f"p_{i}", "user_id": "1", "status": "available", "price": "450"}
+        data_list = [{"id": f"p_{i}", "user_id": "-1", "status": "available", "price": "450"}
                      for i in range(total_count)]
 
         start_time = time.perf_counter()
@@ -39,9 +40,9 @@ async def update_seats_pipelined(seat_count: int, user_count: int) -> dict:
     Update performance test - simple seat updates.
     Returns: dict with results
     """
-    print(
-        f"\n--- Pipelined Update Test ({seat_count} seats, {user_count} users) ---")
     r = await get_redis()
+
+    print(f"Updating {seat_count} seats to Redis for {user_count} users...")
 
     try:
         # Pre-populate seats

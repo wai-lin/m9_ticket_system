@@ -13,9 +13,6 @@ from src.tickets.postgres_ops import sync_seats_from_redis
 REDIS_URL = os.getenv("REDIS_URL", "")
 r = redis.from_url(REDIS_URL, decode_responses=False)
 
-REDIS_URL = os.getenv("REDIS_URL", "")
-r = redis.from_url(REDIS_URL, decode_responses=False)
-
 
 async def amain():
     print("Starting async performance tests...")
@@ -37,11 +34,11 @@ async def amain():
     #     await r.aclose()
 
     # --- Task 3-4: Update Performance Tests ---
-    # try:
-    #     results = await run_pipelined_update_rps_test(r, seat_count=5000, user_count=1000)
-    #     print(f"Update RPS: {results['rps']:.2f}")
-    # finally:
-    #     await r.aclose()
+    try:
+        results = await run_pipelined_update_rps_test(r, seat_count=5000, user_count=1000)
+        print(f"Update RPS: {results['rps']:.2f}")
+    finally:
+        await r.aclose()
 
     # try:
     #     results = await run_hybrid_update_rps_test(r, seat_count=5000, user_count=1000)

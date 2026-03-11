@@ -5,9 +5,6 @@ import redis.asyncio as redis
 # User operations
 from src.users.user_service import UserService
 
-# Ticket operations
-from src.tickets.ticket_service import TicketService
-
 # Tests
 from test.users.test_service import test_user_insert_performance, test_user_concurrent_performance
 from test.tickets.test_service import test_ticket_insert_performance, test_ticket_update_performance

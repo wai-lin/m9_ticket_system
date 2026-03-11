@@ -1,6 +1,7 @@
 from sqlmodel import Session, text
-from src.database import engine, DB_SCHEMA
-from src.models.main import User
+from src.database import engine
+from src.models import User
+from src.env import DB_SCHEMA
 
 
 class UserRepository:

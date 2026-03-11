@@ -1,5 +1,5 @@
 from sqlmodel import Session
-from models.main import User, Airport, Flight, Seat, FlightInstance
+from models import User, Airport, Flight, Seat, FlightInstance
 from database import engine
 from datetime import datetime, timedelta
 

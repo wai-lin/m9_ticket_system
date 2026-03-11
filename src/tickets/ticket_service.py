@@ -1,5 +1,5 @@
 from src.tickets.ticket_repository import TicketRepository
-from src.models.main import Seat, Ticket
+from src.models import Seat, Ticket
 
 
 class TicketService:

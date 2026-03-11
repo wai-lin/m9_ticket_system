@@ -1,5 +1,5 @@
 from sqlmodel import Session, select
-from src.models.main import Ticket, Seat, Payment, PaymentTicket
+from src.models import Ticket, Seat, Payment, PaymentTicket
 from src.database import engine
 import time
 

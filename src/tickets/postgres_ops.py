@@ -1,20 +1,10 @@
 from sqlmodel import Session, select, text
-from src.models.main import User, Ticket, Seat, Payment, PaymentTicket
+from src.models.main import Ticket, Seat, Payment, PaymentTicket
 from src.database import engine, DB_SCHEMA
 import time
 
 
-# --- Operation 1: Create a User ---
-def create_user(name: str, email: str, password: str):
-    with Session(engine) as session:
-        new_user = User(name=name, email=email, password=password)
-        session.add(new_user)
-        session.commit()
-        session.refresh(new_user)
-        return new_user
-
-
-# --- Operation 2: Get Available Seats ---
+# --- Operation: Get Available Seats ---
 def get_available_seats(instance_id: int):
     with Session(engine) as session:
         statement = select(Seat).where(
@@ -23,7 +13,7 @@ def get_available_seats(instance_id: int):
         return session.exec(statement).all()
 
 
-# --- Operation 3: The Purchase Flow (Atomic) ---
+# --- Operation: Purchase Ticket WITHOUT Lock (Demonstrates Race Condition) ---
 def purchase_ticket_without_lock(user_id: int, seat_id: int):
     """
     Atomic operation WITHOUT lock: Demonstrates race condition vulnerability.
@@ -75,10 +65,11 @@ def purchase_ticket_without_lock(user_id: int, seat_id: int):
             return None
 
 
-# --- Operation 3: The Purchase Flow (Atomic) ---
+# --- Operation: Purchase Ticket WITH Lock (Prevents Race Condition) ---
 def purchase_ticket_with_lock(user_id: int, seat_id: int):
     """
     Atomic operation: Reserves seat, creates ticket, and logs payment.
+    Uses FOR UPDATE lock to prevent race conditions.
     If any step fails, the transaction rolls back.
     """
     with Session(engine) as session:
@@ -122,8 +113,9 @@ def purchase_ticket_with_lock(user_id: int, seat_id: int):
             return None
 
 
-# --- Operation 4: Cancel Booking ---
+# --- Operation: Cancel Booking ---
 def cancel_booking(ticket_id: int):
+    """Cancel a ticket and free up the associated seat."""
     with Session(engine) as session:
         ticket = session.get(Ticket, ticket_id)
         if ticket:
@@ -137,14 +129,3 @@ def cancel_booking(ticket_id: int):
             session.commit()
             return True
         return False
-
-
-# --- Operation 5: Truncate User Table ---
-def truncate_users():
-    """Truncate user table and reset ID sequence to 1"""
-    with Session(engine) as session:
-        # Use raw SQL to truncate and reset sequence with schema prefix
-        session.exec(
-            text(f'TRUNCATE TABLE {DB_SCHEMA}."user" RESTART IDENTITY CASCADE'))
-        session.commit()
-        print("User table truncated and ID sequence reset to 1")

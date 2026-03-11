@@ -1,7 +1,7 @@
 import threading
 import time
 import uuid
-from src.operation import create_user
+from src.users.postgres_ops import create_user
 
 
 def run_performance_test(n=1000):
@@ -25,6 +25,7 @@ def run_performance_test(n=1000):
     print(f"Throughput: {n/total_time:.2f} users/sec")
     print("==============================")
     print("==============================")
+
 
 def run_concurrent_performance_test(n=1000):
     """Measure performance of creating N users concurrently"""

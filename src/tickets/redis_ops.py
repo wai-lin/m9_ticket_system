@@ -4,6 +4,7 @@ import redis.asyncio as redis
 
 async def run_pipelined_rps_test(r: redis.Redis, total_count: int, chunk_size: int = 1000):
     """
+    Task 1-2: Insert Performance Test with Pipelining.
     To reach >10k RPS over a network, we use Pipelining.
     This sends 1,000 individual HSET commands in one TCP burst.
     """

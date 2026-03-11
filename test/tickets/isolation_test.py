@@ -1,5 +1,5 @@
 import threading
-from src.operation import purchase_ticket_with_lock, purchase_ticket_without_lock
+from src.tickets.postgres_ops import purchase_ticket_with_lock, purchase_ticket_without_lock
 import time
 
 

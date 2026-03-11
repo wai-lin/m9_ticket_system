@@ -2,12 +2,12 @@ import os
 import redis.asyncio as redis
 import asyncio
 
-from src.hybrid_operation import run_hybrid_ingestion_test
-from src.redis_operation import run_pipelined_rps_test
-from test.isolation_test import run_isolation_test_forced_race_condition, run_isolation_test_with_lock, run_isolation_test_without_lock
-from test.performance_test import run_performance_test, run_concurrent_performance_test
+from src.tickets.hybrid_ops import run_hybrid_ingestion_test
+from src.tickets.redis_ops import run_pipelined_rps_test
+from test.tickets.isolation_test import run_isolation_test_forced_race_condition, run_isolation_test_with_lock, run_isolation_test_without_lock
+from test.users.performance_test import run_performance_test, run_concurrent_performance_test
 from src.database import init_db
-from src.operation import truncate_users
+from src.users.postgres_ops import truncate_users
 
 REDIS_URL = os.getenv("REDIS_URL", "")
 r = redis.from_url(REDIS_URL, decode_responses=False)

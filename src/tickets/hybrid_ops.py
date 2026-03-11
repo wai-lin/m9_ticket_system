@@ -1,11 +1,12 @@
 import time
 import redis.asyncio as redis
 
-# --- 1. THE HYBRID PERSISTENCE PATTERN ---
+# --- Hybrid Persistence Pattern ---
 
 
 async def run_hybrid_ingestion_test(r: redis.Redis, count: int):
     """
+    Task 1-2: Hybrid Ingestion Test.
     Achieves >10k RPS using a single high-concurrency pipeline.
     This avoids 'parallel execution' (multiple workers) while
     maintaining single-record operations (one HSET per ticket).

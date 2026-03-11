@@ -1,19 +1,15 @@
-import os
 import asyncio
-import redis.asyncio as redis
 
 # User operations
 from src.users.user_service import UserService
 
 # Tests
 from test.users.test_service import test_user_insert_performance, test_user_concurrent_performance
-from test.tickets.test_service import test_ticket_insert_performance, test_ticket_update_performance
+from test.tickets.test_service import test_ticket_insert_performance, test_ticket_update_performance, test_high_traffic_purchasing
 from test.tickets.test_isolation import test_isolation_with_lock, test_isolation_without_lock, test_isolation_forced_race_condition
 
 # Database
 from src.database import init_db
-
-REDIS_URL = os.getenv("REDIS_URL", "")
 
 
 # ===== TASK 2: OLTP Tests =====
@@ -94,10 +90,22 @@ async def task3_test2_update_performance():
     print(f"\n✓ Update Test Complete: {results['rps']:.2f} RPS\n")
 
 
+async def test_high_traffic():
+    """Test 3: High-traffic ticket purchasing (Postgres + Redis)"""
+    print("\n" + "="*60)
+    print("Test 3: High-Traffic Ticket Purchasing")
+    print("Write-through pattern: Postgres (authoritative) + Redis (cache)")
+    print("="*60)
+    
+    results = await test_high_traffic_purchasing(num_users=1000, seats_available=100)
+    print(f"\n✓ High-Traffic Test Complete: {results['throughput']:.2f} purchases/sec\n")
+
+
 async def run_task3_tests():
     """Run all Task 3 tests"""
     await task3_test1_insert_performance()
     await task3_test2_update_performance()
+    await test_high_traffic()
 
 
 def main():
@@ -115,8 +123,9 @@ def main():
     # task2_test3_race_condition()
     # task2_test4_lock_solution()
     
-    # TASK 3: Redis Tests
+    # TASK 3: High-RPS & Caching Tests
     # asyncio.run(run_task3_tests())
+    # asyncio.run(test_high_traffic())  # Run individually if desired
     
     print("\n✓ All tests are available. Uncomment in main() to run them.")
     print("="*60 + "\n")

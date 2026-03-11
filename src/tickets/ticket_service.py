@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
 from src.models import Ticket, Seat, Payment, PaymentTicket
 from src.database import engine
+from src.redis import get_redis
 import time
 
 
@@ -107,3 +108,39 @@ class TicketService:
                 session.commit()
                 return True
             return False
+
+    @staticmethod
+    async def purchase_with_redis_cache(user_id: int, seat_id: int) -> dict:
+        """
+        High-traffic ticket purchase: Write-through pattern.
+        1. Purchase ticket in Postgres (authoritative with locks)
+        2. Cache result in Redis (for fast reads)
+        
+        Returns: {success: bool, ticket_id: int, cached: bool}
+        """
+        
+        # Step 1: Write to Postgres with lock (authoritative)
+        ticket = TicketService.purchase_ticket_with_lock(user_id, seat_id)
+        
+        if not ticket:
+            return {"success": False, "ticket_id": None, "cached": False}
+        
+        # Step 2: Update Redis cache asynchronously
+        try:
+            r = await get_redis()
+            await r.hset(f"ticket:{ticket.id}", mapping={
+                "user_id": str(user_id),
+                "seat_id": str(seat_id),
+                "status": "confirmed",
+                "synced": "true"
+            })
+            await r.aclose()
+            cached = True
+        except Exception:
+            cached = False  # Cache failure doesn't fail the purchase
+        
+        return {
+            "success": True,
+            "ticket_id": ticket.id,
+            "cached": cached
+        }

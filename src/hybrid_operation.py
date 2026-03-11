@@ -1,10 +1,8 @@
-import asyncio
 import time
-import uuid
 import redis.asyncio as redis
-from src.redis_operation import REDIS_URL
 
 # --- 1. THE HYBRID PERSISTENCE PATTERN ---
+
 
 async def run_hybrid_ingestion_test(r: redis.Redis, count: int):
     """
@@ -16,7 +14,8 @@ async def run_hybrid_ingestion_test(r: redis.Redis, count: int):
 
     # Pre-generate data
     data_list = [
-        {"id": f"h_{i}", "user_id": "1", "seat_id": str(i % 100), "price": "450.0"}
+        {"id": f"h_{i}", "user_id": "1",
+            "seat_id": str(i % 100), "price": "450.0"}
         for i in range(count)
     ]
 
@@ -41,13 +40,3 @@ async def run_hybrid_ingestion_test(r: redis.Redis, count: int):
     print(f"REDIS INGESTION: {count} ops in {duration:.2f}s")
     print(f">>> MEASURED THROUGHPUT: {rps:.2f} RPS")
     return rps
-
-async def main():
-    r = redis.from_url(REDIS_URL, decode_responses=False)
-    try:
-        await run_hybrid_ingestion_test(r, 10000)
-    finally:
-        await r.aclose()
-
-if __name__ == "__main__":
-    asyncio.run(main())

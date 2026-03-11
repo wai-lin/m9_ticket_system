@@ -2,6 +2,7 @@ import threading
 from src.operation import purchase_ticket_with_lock, purchase_ticket_without_lock
 import time
 
+
 def run_isolation_test_without_lock(user_a_id, user_b_id, target_seat_id):
     """Test parallel execution leads to double-booking"""
     results = []
@@ -63,15 +64,19 @@ def run_isolation_test_forced_race_condition(user_a_id, user_b_id, target_seat_i
         # This makes it more likely threads interleave dangerously
         time.sleep(0.001)  # Tiny delay to let other threads progress
 
-        print(f"[Thread {thread_num}] Attempting booking for User {user_id}...")
+        print(
+            f"[Thread {thread_num}] Attempting booking for User {user_id}...")
         result = purchase_ticket_without_lock(user_id, target_seat_id)
         results.append((user_id, result))
         return result
 
     threads = [
-        threading.Thread(target=attempt_booking_with_forced_delay, args=(user_a_id, 1)),
-        threading.Thread(target=attempt_booking_with_forced_delay, args=(user_b_id, 2)),
-        threading.Thread(target=attempt_booking_with_forced_delay, args=(user_b_id, 3)),
+        threading.Thread(
+            target=attempt_booking_with_forced_delay, args=(user_a_id, 1)),
+        threading.Thread(
+            target=attempt_booking_with_forced_delay, args=(user_b_id, 2)),
+        threading.Thread(
+            target=attempt_booking_with_forced_delay, args=(user_b_id, 3)),
     ]
 
     for t in threads:
@@ -93,6 +98,7 @@ def run_isolation_test_forced_race_condition(user_a_id, user_b_id, target_seat_i
     print("=" * 50 + "\n")
 
     return len(successes) >= 2
+
 
 def run_isolation_test_with_lock(user_a_id, user_b_id, target_seat_id):
     """Test parallel execution leads to preventing double-booking"""

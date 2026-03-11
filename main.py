@@ -2,12 +2,16 @@ import os
 import redis.asyncio as redis
 import asyncio
 
-from src.tickets.hybrid_ops import run_hybrid_ingestion_test
-from src.tickets.redis_ops import run_pipelined_rps_test
+from src.tickets.hybrid_ops import run_hybrid_ingestion_test, run_hybrid_update_rps_test
+from src.tickets.redis_ops import run_pipelined_rps_test, run_pipelined_update_rps_test
 from test.tickets.isolation_test import run_isolation_test_forced_race_condition, run_isolation_test_with_lock, run_isolation_test_without_lock
 from test.users.performance_test import run_performance_test, run_concurrent_performance_test
 from src.database import init_db
 from src.users.postgres_ops import truncate_users
+from src.tickets.postgres_ops import sync_seats_from_redis
+
+REDIS_URL = os.getenv("REDIS_URL", "")
+r = redis.from_url(REDIS_URL, decode_responses=False)
 
 REDIS_URL = os.getenv("REDIS_URL", "")
 r = redis.from_url(REDIS_URL, decode_responses=False)
@@ -15,6 +19,7 @@ r = redis.from_url(REDIS_URL, decode_responses=False)
 
 async def amain():
     print("Starting async performance tests...")
+    # --- Task 1-2: Insert Performance Tests ---
     # try:
     #     await run_pipelined_rps_test(r, 30000)
     #     # --- Starting Pipelined Performance Test (30000 records) ---
@@ -28,6 +33,19 @@ async def amain():
     #     # --- Starting Hybrid Ingestion Test (10000 operations) ---
     #     # REDIS INGESTION: 10000 ops in 1.61s
     #     # >>> MEASURED THROUGHPUT: 6227.27 RPS
+    # finally:
+    #     await r.aclose()
+
+    # --- Task 3-4: Update Performance Tests ---
+    # try:
+    #     results = await run_pipelined_update_rps_test(r, seat_count=5000, user_count=1000)
+    #     print(f"Update RPS: {results['rps']:.2f}")
+    # finally:
+    #     await r.aclose()
+
+    # try:
+    #     results = await run_hybrid_update_rps_test(r, seat_count=5000, user_count=1000)
+    #     await sync_seats_from_redis(r)
     # finally:
     #     await r.aclose()
 

@@ -2,6 +2,7 @@ from sqlmodel import Session, select, text
 from src.models.main import Ticket, Seat, Payment, PaymentTicket
 from src.database import engine, DB_SCHEMA
 import time
+import redis.asyncio as redis
 
 
 # --- Operation: Get Available Seats ---
@@ -129,3 +130,41 @@ def cancel_booking(ticket_id: int):
             session.commit()
             return True
         return False
+
+
+# --- Task 3-4: Sync Operations ---
+
+async def sync_seats_from_redis(r: redis.Redis):
+    """
+    Task 3-4: Sync reserved/confirmed seats from Redis to Postgres.
+    Reads all keys from 'seats_to_sync' set and persists to database.
+    """
+    with Session(engine) as session:
+        # Get all seats marked for sync
+        seats_to_sync = await r.smembers('seats_to_sync')
+        
+        synced_count = 0
+        for seat_key in seats_to_sync:
+            seat_data = await r.hgetall(seat_key)
+            if not seat_data:
+                continue
+                
+            # Decode bytes to strings
+            seat_id = int(seat_data.get(b'seat_id', b'0').decode())
+            status = seat_data.get(b'status', b'available').decode()
+            
+            # Update seat in Postgres
+            seat = session.get(Seat, seat_id)
+            if seat:
+                seat.status = status
+                session.add(seat)
+                synced_count += 1
+        
+        session.commit()
+        
+        # Clear synced seats from Redis
+        if seats_to_sync:
+            await r.delete('seats_to_sync')
+            
+        print(f"Synced {synced_count} seats to Postgres")
+        return synced_count

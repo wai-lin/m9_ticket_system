@@ -25,6 +25,7 @@ def create_db_tables():
 def init_db():
     """Initialize the database schema"""
     create_db_tables()
+    print("Database initialized with tables.")
 
 
 if __name__ == "__main__":

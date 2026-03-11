@@ -3,7 +3,7 @@ from src.tickets.ticket_service import TicketService
 import time
 
 
-def test_isolation_without_lock(user_a_id, user_b_id, target_seat_id):
+def test_isolation_without_lock(user_a_id, user_b_id, user_c_id, target_seat_id):
     """Test parallel execution leads to double-booking"""
     results = []
     start_event = threading.Event()
@@ -17,13 +17,13 @@ def test_isolation_without_lock(user_a_id, user_b_id, target_seat_id):
 
     thread1 = threading.Thread(target=attempt_booking, args=(user_a_id,))
     thread2 = threading.Thread(target=attempt_booking, args=(user_b_id,))
-    thread3 = threading.Thread(target=attempt_booking, args=(user_b_id,))
+    thread3 = threading.Thread(target=attempt_booking, args=(user_c_id,))
 
     thread1.start()
     thread2.start()
     thread3.start()
 
-    time.sleep(0.1)
+    time.sleep(2)
     start_event.set()
 
     thread1.join()
@@ -46,7 +46,7 @@ def test_isolation_without_lock(user_a_id, user_b_id, target_seat_id):
     print("==============================\n")
 
 
-def test_isolation_forced_race_condition(user_a_id, user_b_id, target_seat_id):
+def test_isolation_forced_race_condition(user_a_id, user_b_id, user_c_id, target_seat_id):
     """
     FORCES the race condition by:
     1. Having all threads check availability simultaneously
@@ -72,7 +72,7 @@ def test_isolation_forced_race_condition(user_a_id, user_b_id, target_seat_id):
         threading.Thread(
             target=attempt_booking_with_forced_delay, args=(user_b_id, 2)),
         threading.Thread(
-            target=attempt_booking_with_forced_delay, args=(user_b_id, 3)),
+            target=attempt_booking_with_forced_delay, args=(user_c_id, 3)),
     ]
 
     for t in threads:

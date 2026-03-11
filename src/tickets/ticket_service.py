@@ -1,4 +1,4 @@
-from sqlmodel import Session, select
+from sqlmodel import Session, select, text
 from src.models import Ticket, Seat, Payment, PaymentTicket
 from src.database import engine
 from src.redis import get_redis
@@ -144,3 +144,67 @@ class TicketService:
             "ticket_id": ticket.id,
             "cached": cached
         }
+
+    @staticmethod
+    def truncate_tickets() -> None:
+        """Truncate all tickets and related data"""
+        with Session(engine) as session:
+            try:
+                # Delete all payment-ticket links first (foreign key constraint)
+                session.exec(text("DELETE FROM public.payment_ticket"))
+                session.commit()
+            except Exception:
+                session.rollback()
+            
+            try:
+                # Delete all tickets
+                session.exec(text("DELETE FROM public.ticket"))
+                session.commit()
+            except Exception:
+                session.rollback()
+            
+            try:
+                # Delete all payments
+                session.exec(text("DELETE FROM public.payment"))
+                session.commit()
+            except Exception:
+                session.rollback()
+            
+            try:
+                # Reset seats to available
+                session.exec(text("UPDATE public.seat SET status = 'available'"))
+                session.commit()
+            except Exception:
+                session.rollback()
+
+    @staticmethod
+    async def clear_redis_cache() -> None:
+        """Clear all ticket-related keys from Redis cache"""
+        from src.redis import get_redis
+        
+        r = await get_redis()
+        
+        # Scan and delete all ticket and seat keys
+        cursor = 0
+        deleted = 0
+        
+        while True:
+            cursor, keys = await r.scan(cursor, match="ticket:*", count=100)
+            if keys:
+                await r.delete(*keys)
+                deleted += len(keys)
+            if cursor == 0:
+                break
+        
+        # Also clear seat cache
+        cursor = 0
+        while True:
+            cursor, keys = await r.scan(cursor, match="seat:*", count=100)
+            if keys:
+                await r.delete(*keys)
+                deleted += len(keys)
+            if cursor == 0:
+                break
+        
+        await r.aclose()
+        print(f"Cleared {deleted} keys from Redis cache")

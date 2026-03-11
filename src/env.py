@@ -14,8 +14,11 @@ DB_NAME = os.getenv("DB_NAME", "ticket_system")
 DB_SCHEMA = os.getenv("DB_SCHEMA", "public")
 DB_ISOLATION_LEVEL = os.getenv("DB_ISOLATION_LEVEL", "READ COMMITTED")
 
-# Construct database URL
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# Construct database URL with schema if not public
+if DB_SCHEMA and DB_SCHEMA != "public":
+    DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?options=-c%20search_path%3D{DB_SCHEMA}"
+else:
+    DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 # ===== Redis Configuration =====
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")

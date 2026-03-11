@@ -24,19 +24,20 @@ async def test_high_traffic_purchasing(num_users: int = 1000, seats_available: i
     """
     succeeded = 0
     failed = 0
-    
-    print(f"\n--- High-Traffic Purchasing Test ({num_users} users, {seats_available} seats) ---")
-    
+
+    print(
+        f"\n--- High-Traffic Purchasing Test ({num_users} users, {seats_available} seats) ---")
+
     start_time = time.perf_counter()
-    
+
     # Concurrent purchasing with asyncio
     tasks = []
     for user_id in range(1, num_users + 1):
         seat_id = (user_id % seats_available) + 1
         tasks.append(TicketService.purchase_with_redis_cache(user_id, seat_id))
-    
+
     results = await asyncio.gather(*tasks, return_exceptions=True)
-    
+
     cached_count = 0
     for result in results:
         if isinstance(result, dict) and result.get("success"):
@@ -45,10 +46,10 @@ async def test_high_traffic_purchasing(num_users: int = 1000, seats_available: i
                 cached_count += 1
         else:
             failed += 1
-    
+
     duration = time.perf_counter() - start_time
     throughput = succeeded / duration if duration > 0 else 0
-    
+
     print(f"Successful purchases: {succeeded}/{num_users}")
     print(f"Failed purchases: {failed}/{num_users}")
     print(f"Cached in Redis: {cached_count}/{succeeded}")
@@ -56,7 +57,7 @@ async def test_high_traffic_purchasing(num_users: int = 1000, seats_available: i
     print(f"Throughput: {throughput:.2f} purchases/sec")
     print(f"Duration: {duration:.2f}s")
     print(f"Avg latency: {(duration/num_users)*1000:.2f}ms per purchase")
-    
+
     return {
         "succeeded": succeeded,
         "failed": failed,

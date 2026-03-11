@@ -1,7 +1,89 @@
-from sqlmodel import Session
-from models import User, Airport, Flight, Seat, FlightInstance
-from database import engine
+from sqlmodel import Session, select
+from src.models import User, Airport, Flight, Seat, FlightInstance
+from src.database import engine
 from datetime import datetime, timedelta
+
+
+def run_seeder():
+    """
+    Create minimal flight infrastructure for testing.
+    Idempotent: checks if data exists before creating.
+    Assumes database tables already exist (they're created by init_db() or docker-compose).
+
+    Returns: (instance_id, first_seat_id) for booking tests
+    """
+    with Session(engine) as session:
+        # 1. Check/Create Airport
+        airport = session.exec(
+            select(Airport).where(Airport.code == "TEST")
+        ).first()
+
+        if not airport:
+            airport = Airport(
+                name="Test Airport",
+                code="TEST",
+                city="Test City",
+                timezone="UTC"
+            )
+            session.add(airport)
+            session.commit()
+
+        # 2. Check/Create Flight
+        flight = session.exec(
+            select(Flight).where(Flight.flight_id == "TEST001")
+        ).first()
+
+        if not flight:
+            flight = Flight(
+                flight_id="TEST001",
+                airline_code="TST",
+                departure_airport_id=airport.id,
+                arrival_airport_id=airport.id,
+            )
+            session.add(flight)
+            session.commit()
+
+        # 3. Check/Create FlightInstance
+        instance = session.exec(
+            select(FlightInstance).where(
+                FlightInstance.flight_id == flight.id
+            )
+        ).first()
+
+        if not instance:
+            instance = FlightInstance(
+                flight_id=flight.id,
+                scheduled_departure=datetime(2026, 5, 20),
+                base_price=450.00,
+            )
+            session.add(instance)
+            session.commit()
+
+        # 4. Check/Create Seats (exactly 100)
+        seat_count = session.exec(
+            select(Seat).where(Seat.instance_id == instance.id)
+        ).all()
+
+        if len(seat_count) == 0:
+            seats = []
+            for i in range(1, 101):
+                seats.append(
+                    Seat(
+                        instance_id=instance.id,
+                        seat_number=f"{i}A",
+                        class_="economy",
+                        status="available"
+                    )
+                )
+            session.add_all(seats)
+            session.commit()
+
+        # Get the first seat ID for testing
+        first_seat = session.exec(
+            select(Seat).where(Seat.instance_id == instance.id).limit(1)
+        ).first()
+        
+        return instance.id, first_seat.id if first_seat else 1
 
 
 def populate_sample_data():
@@ -91,7 +173,3 @@ def populate_sample_data():
         print(
             f"Success! Created {len(airports)} airports, {len(routes)} routes, and many seats."
         )
-
-
-if __name__ == "__main__":
-    populate_sample_data()

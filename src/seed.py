@@ -15,7 +15,8 @@ def populate_sample_data():
             Airport(
                 name="Los Angeles Intl", code="LAX", city="Los Angeles", timezone="PST"
             ),
-            Airport(name="Heathrow", code="LHR", city="London", timezone="GMT"),
+            Airport(name="Heathrow", code="LHR",
+                    city="London", timezone="GMT"),
             Airport(name="Haneda", code="HND", city="Tokyo", timezone="JST"),
         ]
         session.add_all(airports)
@@ -51,7 +52,8 @@ def populate_sample_data():
             for day in range(1, 4):  # Next 3 days
                 instance = FlightInstance(
                     flight_id=route.id,
-                    scheduled_departure=datetime(2026, 5, 20) + timedelta(days=day),
+                    scheduled_departure=datetime(
+                        2026, 5, 20) + timedelta(days=day),
                     base_price=300.00 + (day * 50),
                 )
                 session.add(instance)
@@ -73,8 +75,10 @@ def populate_sample_data():
 
         # 5. Add a few test Users
         users = [
-            User(name="Alice Smith", email="alice@test.com", password="hash123_secure"),
-            User(name="Bob Jones", email="bob@test.com", password="hash456_secure"),
+            User(name="Alice Smith", email="alice@test.com",
+                 password="hash123_secure"),
+            User(name="Bob Jones", email="bob@test.com",
+                 password="hash456_secure"),
             User(
                 name="Charlie Brown",
                 email="charlie@test.com",

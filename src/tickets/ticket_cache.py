@@ -10,7 +10,7 @@ async def insert_seats_pipelined(total_count: int, chunk_size: int = 1000) -> fl
     """
     print(f"\n--- Pipelined Insert Test ({total_count} records) ---")
     r = await get_redis()
-    
+
     try:
         data_list = [{"id": f"p_{i}", "user_id": "1", "status": "available", "price": "450"}
                      for i in range(total_count)]
@@ -39,9 +39,10 @@ async def update_seats_pipelined(seat_count: int, user_count: int) -> dict:
     Update performance test - simple seat updates.
     Returns: dict with results
     """
-    print(f"\n--- Pipelined Update Test ({seat_count} seats, {user_count} users) ---")
+    print(
+        f"\n--- Pipelined Update Test ({seat_count} seats, {user_count} users) ---")
     r = await get_redis()
-    
+
     try:
         # Pre-populate seats
         start_populate = time.perf_counter()
@@ -60,12 +61,12 @@ async def update_seats_pipelined(seat_count: int, user_count: int) -> dict:
         # Simulate simple updates
         start_update = time.perf_counter()
         pipe = r.pipeline(transaction=False)
-        
+
         for user_id in range(user_count):
             seat_id = user_id % seat_count
             seat_key = f"seat:{seat_id}"
             pipe.hset(seat_key, "status", "occupied", "user_id", str(user_id))
-        
+
         await pipe.execute()
 
         update_duration = time.perf_counter() - start_update
@@ -82,5 +83,3 @@ async def update_seats_pipelined(seat_count: int, user_count: int) -> dict:
         }
     finally:
         await r.aclose()
-
-

@@ -11,7 +11,8 @@ def test_isolation_without_lock(user_a_id, user_b_id, target_seat_id):
     def attempt_booking(user_id):
         start_event.wait()
         print(f"User {user_id} attempting to book seat {target_seat_id}...")
-        result = TicketService.purchase_ticket_without_lock(user_id, target_seat_id)
+        result = TicketService.purchase_ticket_without_lock(
+            user_id, target_seat_id)
         results.append(result)
 
     thread1 = threading.Thread(target=attempt_booking, args=(user_a_id,))
@@ -60,7 +61,8 @@ def test_isolation_forced_race_condition(user_a_id, user_b_id, target_seat_id):
 
         print(
             f"[Thread {thread_num}] Attempting booking for User {user_id}...")
-        result = TicketService.purchase_ticket_without_lock(user_id, target_seat_id)
+        result = TicketService.purchase_ticket_without_lock(
+            user_id, target_seat_id)
         results.append((user_id, result))
         return result
 
@@ -100,7 +102,8 @@ def test_isolation_with_lock(user_a_id, user_b_id, target_seat_id):
 
     def attempt_booking(user_id):
         print(f"User {user_id} attempting to book seat {target_seat_id}...")
-        result = TicketService.purchase_ticket_with_lock(user_id, target_seat_id)
+        result = TicketService.purchase_ticket_with_lock(
+            user_id, target_seat_id)
         results.append(result)
 
     thread1 = threading.Thread(target=attempt_booking, args=(user_a_id,))
@@ -126,4 +129,3 @@ def test_isolation_with_lock(user_a_id, user_b_id, target_seat_id):
         print("⚠️  Both bookings failed - check logs for database errors")
 
     print("==============================\n")
-

@@ -31,14 +31,14 @@ def test_user_insert_performance(n=1000):
     end_time = time.time()
     total_time = end_time - start_time
     rps = n / total_time
-    
+
     print("==============================")
     print(f"--- User Insert Performance ---")
     print(f"Total time for {n} records: {total_time:.2f} seconds")
     print(f"Avg time per record: {(total_time/n)*1000:.2f} ms")
     print(f"Throughput: {rps:.2f} users/sec")
     print("==============================")
-    
+
     return rps
 
 
@@ -58,7 +58,8 @@ def test_user_concurrent_performance(n=1000):
 
     per_n = n // 3
     thread1 = threading.Thread(target=create_user_thread, args=(0, per_n))
-    thread2 = threading.Thread(target=create_user_thread, args=(per_n, 2 * per_n))
+    thread2 = threading.Thread(
+        target=create_user_thread, args=(per_n, 2 * per_n))
     thread3 = threading.Thread(target=create_user_thread, args=(2 * per_n, n))
 
     thread1.start()
@@ -72,13 +73,12 @@ def test_user_concurrent_performance(n=1000):
     end_time = time.time()
     total_time = end_time - start_time
     rps = n / total_time
-    
+
     print("==============================")
     print(f"--- Concurrent User Performance ---")
     print(f"Total time for {n} records: {total_time:.2f} seconds")
     print(f"Avg time per record: {(total_time/n)*1000:.2f} ms")
     print(f"Throughput: {rps:.2f} users/sec")
     print("==============================")
-    
-    return rps
 
+    return rps

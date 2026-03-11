@@ -1,6 +1,6 @@
 """Database connection and setup"""
-from sqlmodel import create_engine, Session, SQLModel
-from src.env import DATABASE_URL, DB_SCHEMA
+from sqlmodel import create_engine, SQLModel
+from src.env import DATABASE_URL, DB_SCHEMA, DB_ISOLATION_LEVEL
 from src.models import *  # noqa: F401, F403
 
 
@@ -13,6 +13,7 @@ engine = create_engine(
     future=True,
     pool_size=10,
     max_overflow=20,
+    isolation_level=DB_ISOLATION_LEVEL,
 )
 
 
@@ -28,4 +29,3 @@ def init_db():
 
 if __name__ == "__main__":
     init_db()
-

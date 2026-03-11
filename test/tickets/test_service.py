@@ -12,5 +12,3 @@ async def test_ticket_update_performance(seat_count: int = 5000, user_count: int
     """Test update performance with Redis seat updates"""
     results = await update_seats_pipelined(seat_count, user_count)
     return results
-
-

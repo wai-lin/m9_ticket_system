@@ -29,7 +29,7 @@ class TicketService:
             try:
                 statement = select(Seat).where(Seat.id == seat_id)
                 seat = session.exec(statement).first()
-                
+
                 if not seat or seat.status != "available":
                     raise Exception("Seat is no longer available.")
 
@@ -66,7 +66,7 @@ class TicketService:
                 statement = select(Seat).where(
                     Seat.id == seat_id).with_for_update()
                 seat = session.exec(statement).first()
-                
+
                 if not seat or seat.status != "available":
                     raise Exception("Seat is no longer available.")
 

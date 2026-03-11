@@ -1,18 +1,16 @@
 import os
-import redis.asyncio as redis
 import asyncio
+import redis.asyncio as redis
 
 # User operations
-from src.users.user_service import create_user, truncate_users
+from src.users.user_service import UserService
 
 # Ticket operations
-from src.tickets.ticket_service import purchase_ticket_with_lock, purchase_ticket_without_lock, cancel_booking
-from src.tickets.ticket_cache import insert_seats_pipelined, update_seats_pipelined
-from src.tickets.ticket_sync import insert_seats_hybrid, update_seats_hybrid, sync_seats_to_postgres
+from src.tickets.ticket_service import TicketService
 
 # Tests
 from test.users.test_service import test_user_insert_performance, test_user_concurrent_performance
-from test.tickets.test_service import test_ticket_insert_performance, test_ticket_update_performance, test_ticket_hybrid_update_performance
+from test.tickets.test_service import test_ticket_insert_performance, test_ticket_update_performance
 from test.tickets.test_isolation import test_isolation_with_lock, test_isolation_without_lock, test_isolation_forced_race_condition
 
 # Database
@@ -21,110 +19,112 @@ from src.database import init_db
 REDIS_URL = os.getenv("REDIS_URL", "")
 
 
-async def run_ticket_insert_tests():
-    """Run Task 1-2: Insert performance tests"""
+# ===== TASK 2: OLTP Tests =====
+
+def task2_test1_sync_user_insert():
+    """Test 1: Synchronous user insert"""
     print("\n" + "="*60)
-    print("TASK 1-2: TICKET INSERT PERFORMANCE TESTS")
+    print("TASK 2 - Test 1: Synchronous User Insert")
+    print("="*60)
+    
+    UserService.truncate_users()
+    rps = test_user_insert_performance(100)
+    print(f"✓ Sequential Insert Complete: {rps:.2f} users/sec\n")
+
+
+def task2_test2_concurrent_user_insert():
+    """Test 2: Concurrent user insert"""
+    print("\n" + "="*60)
+    print("TASK 2 - Test 2: Concurrent User Insert")
+    print("="*60)
+    
+    UserService.truncate_users()
+    rps = test_user_concurrent_performance(100)
+    print(f"✓ Concurrent Insert Complete: {rps:.2f} users/sec\n")
+
+
+def task2_test3_race_condition():
+    """Test 3: Race condition demonstration"""
+    print("\n" + "="*60)
+    print("TASK 2 - Test 3: Race Condition (Without Lock)")
+    print("="*60)
+    
+    # Create 4 users and a flight instance first
+    u1 = UserService.create_user("User 1", "user1@test.com")
+    u2 = UserService.create_user("User 2", "user2@test.com")
+    u3 = UserService.create_user("User 3", "user3@test.com")
+    
+    print(f"\n✓ Created 3 users (IDs: {u1.id}, {u2.id}, {u3.id})")
+    print("✓ Attempting 3 concurrent bookings for same seat...\n")
+    
+    test_isolation_forced_race_condition(u1.id, u2.id, 1)
+
+
+def task2_test4_lock_solution():
+    """Test 4: Lock-based race condition prevention"""
+    print("\n" + "="*60)
+    print("TASK 2 - Test 4: Race Condition Prevention (With Lock)")
+    print("="*60)
+    
+    u1 = UserService.create_user("User A", "userA@test.com")
+    u2 = UserService.create_user("User B", "userB@test.com")
+    
+    print(f"\n✓ Created 2 users (IDs: {u1.id}, {u2.id})")
+    print("✓ Attempting 2 concurrent bookings for same seat (with FOR UPDATE lock)...\n")
+    
+    test_isolation_with_lock(u1.id, u2.id, 2)
+
+
+# ===== TASK 3: High-RPS Redis Tests =====
+
+async def task3_test1_insert_performance():
+    """Test 1: Redis insert performance"""
+    print("\n" + "="*60)
+    print("TASK 3 - Test 1: Redis Insert Performance")
     print("="*60 + "\n")
     
-    results = await test_ticket_insert_performance(30000)
-    print(f"\n✓ Insert Performance: {results:.2f} RPS")
+    rps = await test_ticket_insert_performance(30000)
+    print(f"\n✓ Insert Test Complete: {rps:.2f} RPS\n")
 
 
-async def run_ticket_update_tests():
-    """Run Task 3-4: Update performance tests"""
+async def task3_test2_update_performance():
+    """Test 2: Redis update performance"""
     print("\n" + "="*60)
-    print("TASK 3-4: TICKET UPDATE PERFORMANCE TESTS")
+    print("TASK 3 - Test 2: Redis Update Performance")
     print("="*60 + "\n")
     
     results = await test_ticket_update_performance(5000, 1000)
-    print(f"\n✓ Update Performance: {results['rps']:.2f} RPS")
-    print(f"✓ Success Rate: {(results['successful']/(results['successful']+results['failed']))*100:.2f}%")
+    print(f"\n✓ Update Test Complete: {results['rps']:.2f} RPS\n")
 
 
-async def run_ticket_hybrid_tests():
-    """Run hybrid insert and update tests with sync"""
-    print("\n" + "="*60)
-    print("HYBRID TESTS: REDIS + POSTGRES SYNC")
-    print("="*60 + "\n")
-    
-    results = await test_ticket_hybrid_update_performance(5000, 1000)
-    print(f"\n✓ Hybrid Update Performance: {results['rps']:.2f} RPS")
-    print(f"✓ Synced to Postgres: {results['synced_to_postgres']} records")
-
-
-def run_ticket_isolation_tests():
-    """Run isolation tests"""
-    print("\n" + "="*60)
-    print("ISOLATION TESTS: RACE CONDITIONS")
-    print("="*60 + "\n")
-    
-    print("\n--- Test 1: Without Lock (Should show race condition) ---")
-    test_isolation_without_lock(user_a_id=1, user_b_id=2, target_seat_id=1)
-    
-    print("\n--- Test 2: Forced Race Condition ---")
-    test_isolation_forced_race_condition(user_a_id=3, user_b_id=4, target_seat_id=2)
-    
-    print("\n--- Test 3: With Lock (Should prevent race condition) ---")
-    test_isolation_with_lock(user_a_id=5, user_b_id=6, target_seat_id=3)
-
-
-def run_user_performance_tests():
-    """Run user creation performance tests"""
-    print("\n" + "="*60)
-    print("USER PERFORMANCE TESTS")
-    print("="*60 + "\n")
-    
-    rps = test_user_insert_performance(100)
-    print(f"\n✓ Sequential Insert: {rps:.2f} users/sec")
-    
-    rps = test_user_concurrent_performance(100)
-    print(f"\n✓ Concurrent Insert: {rps:.2f} users/sec")
-
-
-async def main_async():
-    """Run all async tests"""
-    try:
-        await run_ticket_insert_tests()
-    except Exception as e:
-        print(f"Error in insert tests: {e}")
-    
-    try:
-        await run_ticket_update_tests()
-    except Exception as e:
-        print(f"Error in update tests: {e}")
-    
-    try:
-        await run_ticket_hybrid_tests()
-    except Exception as e:
-        print(f"Error in hybrid tests: {e}")
+async def run_task3_tests():
+    """Run all Task 3 tests"""
+    await task3_test1_insert_performance()
+    await task3_test2_update_performance()
 
 
 def main():
     """Main entry point"""
+    
     print("\n" + "="*60)
-    print("TICKET SYSTEM TESTS")
+    print("TICKET SYSTEM - SIMPLIFIED TESTS")
     print("="*60)
     
-    # Initialize database
-    # init_db()
-    # print("✓ Database initialized")
+    # Uncomment the tests you want to run:
     
-    # Run sync tests
-    # run_user_performance_tests()
-    # run_ticket_isolation_tests()
+    # TASK 2: OLTP Tests
+    # task2_test1_sync_user_insert()
+    # task2_test2_concurrent_user_insert()
+    # task2_test3_race_condition()
+    # task2_test4_lock_solution()
     
-    # Run async tests
-    # asyncio.run(main_async())
+    # TASK 3: Redis Tests
+    # asyncio.run(run_task3_tests())
     
-    print("\n✓ All tests available - uncomment in main() to run")
+    print("\n✓ All tests are available. Uncomment in main() to run them.")
+    print("="*60 + "\n")
 
 
 if __name__ == "__main__":
     main()
 
-
-
-if __name__ == "__main__":
-    main()
-    # asyncio.run(amain())

@@ -1,12 +1,12 @@
 import threading
 import time
 import uuid
-from src.users.user_service import create_user
+from src.users.user_service import UserService
 
 
 def test_create_user():
     """Unit test for user creation"""
-    user = create_user(
+    user = UserService.create_user(
         name="Test User",
         email=f"test_{uuid.uuid4()}@test.com",
         password="password123"
@@ -22,7 +22,7 @@ def test_user_insert_performance(n=1000):
     start_time = time.time()
 
     for i in range(n):
-        create_user(
+        UserService.create_user(
             name=f"Performance User {i}",
             email=f"perf_{i}_{time.time()}@test.com",
             password="password123"
@@ -48,7 +48,7 @@ def test_user_concurrent_performance(n=1000):
 
     def create_user_thread(start, end):
         for i in range(start, end):
-            create_user(
+            UserService.create_user(
                 name=f"Performance User {i}",
                 email=f"perf_{uuid.uuid4()}@test.com",
                 password="password123"
@@ -81,3 +81,4 @@ def test_user_concurrent_performance(n=1000):
     print("==============================")
     
     return rps
+

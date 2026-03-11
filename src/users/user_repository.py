@@ -10,11 +10,11 @@ class UserRepository:
     def create(name: str, email: str, password: str) -> User:
         """Create a new user"""
         with Session(engine) as session:
-            new_user = User(name=name, email=email, password=password)
-            session.add(new_user)
+            user = User(name=name, email=email, password=password)
+            session.add(user)
             session.commit()
-            session.refresh(new_user)
-            return new_user
+            session.refresh(user)
+            return user
 
     @staticmethod
     def truncate() -> None:
@@ -23,4 +23,4 @@ class UserRepository:
             session.exec(
                 text(f'TRUNCATE TABLE {DB_SCHEMA}."user" RESTART IDENTITY CASCADE'))
             session.commit()
-            print("User table truncated and ID sequence reset to 1")
+

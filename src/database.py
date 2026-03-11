@@ -25,7 +25,7 @@ SQLModel.metadata.schema = DB_SCHEMA
 
 engine = create_engine(
     DATABASE_URL,
-    echo=True,  # Useful for debugging SQL queries
+    echo=False,  # Useful for debugging SQL queries
     future=True,  # Ensures SQLAlchemy 2.0 compatibility
     pool_size=10,  # Keeps 10 connections ready
     max_overflow=20,  # Allows up to 20 extra connections during spikes

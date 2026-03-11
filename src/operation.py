@@ -34,6 +34,7 @@ def purchase_ticket_without_lock(user_id: int, seat_id: int):
             # 1. Fetch seat WITHOUT lock - use fresh SELECT (not cached get)
             statement = select(Seat).where(Seat.id == seat_id)
             seat = session.exec(statement).first()
+            print(f"User {user_id} sees seat {seat_id} as {seat.status}")
             if not seat or seat.status != "available":
                 raise Exception("Seat is no longer available.")
 

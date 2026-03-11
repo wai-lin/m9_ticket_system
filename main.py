@@ -10,9 +10,8 @@ def main():
     print("Database initialized successfully!")
 
 
-
 if __name__ == "__main__":
-    main()
+    # main()
 
     # truncate_users()
     # run_performance_test(1000)

@@ -1,37 +1,38 @@
 import threading
-from src.operation import purchase_ticket_with_lock, purchase_ticket_without_lock
+from src.tickets.ticket_service import TicketService
 import time
 
-def run_isolation_test_without_lock(user_a_id, user_b_id, target_seat_id):
+
+def test_isolation_without_lock(user_a_id, user_b_id, user_c_id, target_seat_id):
     """Test parallel execution leads to double-booking"""
     results = []
     start_event = threading.Event()
 
     def attempt_booking(user_id):
-        start_event.wait()  # All threads wait here
+        start_event.wait()
         print(f"User {user_id} attempting to book seat {target_seat_id}...")
-        result = purchase_ticket_without_lock(user_id, target_seat_id)
+        result = TicketService.purchase_ticket_without_lock(
+            user_id, target_seat_id)
         results.append(result)
 
     thread1 = threading.Thread(target=attempt_booking, args=(user_a_id,))
     thread2 = threading.Thread(target=attempt_booking, args=(user_b_id,))
-    thread3 = threading.Thread(target=attempt_booking, args=(user_b_id,))
+    thread3 = threading.Thread(target=attempt_booking, args=(user_c_id,))
 
     thread1.start()
     thread2.start()
     thread3.start()
 
-    time.sleep(0.1)  # Let all threads get ready
-    start_event.set()  # Release them simultaneously!
+    time.sleep(2)
+    start_event.set()
 
     thread1.join()
     thread2.join()
     thread3.join()
 
-    # Analyze results
     successes = [r for r in results if r is not None]
     print("==============================")
-    print("\n--- Isolation Test Results (WITHOUT LOCK) ---")
+    print("\n--- Isolation Test (WITHOUT LOCK) ---")
     print(f"Total attempts: 3")
     print(f"Successful bookings: {len(successes)}")
 
@@ -42,11 +43,10 @@ def run_isolation_test_without_lock(user_a_id, user_b_id, target_seat_id):
     else:
         print("⚠️  Both bookings failed - check logs for database errors")
 
-    print("==============================")
-    print("==============================")
+    print("==============================\n")
 
 
-def run_isolation_test_forced_race_condition(user_a_id, user_b_id, target_seat_id):
+def test_isolation_forced_race_condition(user_a_id, user_b_id, user_c_id, target_seat_id):
     """
     FORCES the race condition by:
     1. Having all threads check availability simultaneously
@@ -56,22 +56,23 @@ def run_isolation_test_forced_race_condition(user_a_id, user_b_id, target_seat_i
     barrier = threading.Barrier(3)
 
     def attempt_booking_with_forced_delay(user_id, thread_num):
-        # Synchronize - all threads reach this point together
         barrier.wait()
+        time.sleep(0.001)
 
-        # Add artificial delay to STRETCH the race condition window
-        # This makes it more likely threads interleave dangerously
-        time.sleep(0.001)  # Tiny delay to let other threads progress
-
-        print(f"[Thread {thread_num}] Attempting booking for User {user_id}...")
-        result = purchase_ticket_without_lock(user_id, target_seat_id)
+        print(
+            f"[Thread {thread_num}] Attempting booking for User {user_id}...")
+        result = TicketService.purchase_ticket_without_lock(
+            user_id, target_seat_id)
         results.append((user_id, result))
         return result
 
     threads = [
-        threading.Thread(target=attempt_booking_with_forced_delay, args=(user_a_id, 1)),
-        threading.Thread(target=attempt_booking_with_forced_delay, args=(user_b_id, 2)),
-        threading.Thread(target=attempt_booking_with_forced_delay, args=(user_b_id, 3)),
+        threading.Thread(
+            target=attempt_booking_with_forced_delay, args=(user_a_id, 1)),
+        threading.Thread(
+            target=attempt_booking_with_forced_delay, args=(user_b_id, 2)),
+        threading.Thread(
+            target=attempt_booking_with_forced_delay, args=(user_c_id, 3)),
     ]
 
     for t in threads:
@@ -94,32 +95,29 @@ def run_isolation_test_forced_race_condition(user_a_id, user_b_id, target_seat_i
 
     return len(successes) >= 2
 
-def run_isolation_test_with_lock(user_a_id, user_b_id, target_seat_id):
+
+def test_isolation_with_lock(user_a_id, user_b_id, target_seat_id):
     """Test parallel execution leads to preventing double-booking"""
     results = []
 
     def attempt_booking(user_id):
-        # This will run in a separate thread
         print(f"User {user_id} attempting to book seat {target_seat_id}...")
-        result = purchase_ticket_with_lock(user_id, target_seat_id)
+        result = TicketService.purchase_ticket_with_lock(
+            user_id, target_seat_id)
         results.append(result)
 
-    # Create two threads (simultaneous users)
     thread1 = threading.Thread(target=attempt_booking, args=(user_a_id,))
     thread2 = threading.Thread(target=attempt_booking, args=(user_b_id,))
 
-    # Start both at the same time
     thread1.start()
     thread2.start()
 
-    # Wait for both to finish
     thread1.join()
     thread2.join()
 
-    # Analyze results
     successes = [r for r in results if r is not None]
     print("==============================")
-    print("\n--- Isolation Test Results (WITH LOCK) ---")
+    print("\n--- Isolation Test (WITH LOCK) ---")
     print(f"Total attempts: 2")
     print(f"Successful bookings: {len(successes)}")
 
@@ -130,5 +128,4 @@ def run_isolation_test_with_lock(user_a_id, user_b_id, target_seat_id):
     else:
         print("⚠️  Both bookings failed - check logs for database errors")
 
-    print("==============================")
-    print("==============================")
+    print("==============================\n")

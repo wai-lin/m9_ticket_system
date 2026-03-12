@@ -31,3 +31,12 @@ if REDIS_PASSWORD:
     REDIS_URL = f"redis://{REDIS_USER}:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}"
 else:
     REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}"
+
+# ===== Snowflake Configuration =====
+SF_HOST = os.getenv("SF_HOST", "gkb48589.snowflakecomputing.com")
+SF_ACCOUNT = os.getenv("SF_ACCOUNT", "GKB48589")
+SF_USER = os.getenv("SF_USERNAME", "student")
+SF_PASSWORD = os.getenv("SF_PASSWORD", "HSUnivSFTests970")
+SF_DATABASE = os.getenv("SF_DATABASE", "SF_SAMPLE")
+SF_WAREHOUSE = os.getenv("SF_WAREHOUSE", "COMPUTE_S")
+SF_SCHEMA = "ANALYTICS_MART"

@@ -15,8 +15,8 @@ from test.tickets.test_isolation import test_isolation_with_lock, test_isolation
 from src.database import init_db
 from src.seed import run_seeder
 
-# Analytics 
-from src.analytics import load_to_snowflake_staging, setup_analytics_schema, report_all, get_kpi_summary
+# Analytics
+from src.analytics import load_to_snowflake_staging, setup_analytics_schema, report_all, get_kpi_summary, clear_all_data
 from src.models import User, Seat
 from sqlmodel import Session, select
 
@@ -167,7 +167,7 @@ async def task4_analytics_demo():
     print("\n" + "="*60)
     print("TASK 4 - ANALYTICS & DATA WAREHOUSING")
     print("="*60)
-    
+
     print("\n📊 STEP 1: Extract and Load Data to Snowflake Staging")
     print("-"*60)
     try:
@@ -175,7 +175,7 @@ async def task4_analytics_demo():
     except Exception as e:
         print(f"❌ Error loading data: {e}")
         return
-    
+
     print("\n🏗️  STEP 2: Build Analytical Data Mart")
     print("-"*60)
     try:
@@ -183,7 +183,7 @@ async def task4_analytics_demo():
     except Exception as e:
         print(f"❌ Error setting up analytics: {e}")
         return
-    
+
     print("\n📈 STEP 3: INITIAL ANALYTICS REPORT (Before Changes)")
     print("-"*60)
     try:
@@ -191,34 +191,37 @@ async def task4_analytics_demo():
     except Exception as e:
         print(f"❌ Error generating report: {e}")
         return
-    
+
     print("\n🔄 STEP 4: Perform Business Operations (Simulate Change)")
     print("-"*60)
     print("Creating 50 additional bookings...")
-    
+
     # Get current highest user ID
     from src.database import engine
-    
+
     with Session(engine) as session:
-        max_user = session.exec(select(User).order_by(User.id.desc()).limit(1)).first()
+        max_user = session.exec(select(User).order_by(
+            User.id.desc()).limit(1)).first()
         start_user_id = max_user.id + 1 if max_user else 1001
-        
+
         # Create 50 new bookings
         for i in range(50):
-            user = UserService.create_user(f"new_user_{i}", f"new_{i}@test.com")
-            
+            user = UserService.create_user(
+                f"new_user_{i}", f"new_{i}@test.com")
+
             # Find available seats
             seats = session.exec(
                 select(Seat).where(Seat.status == "available").limit(1)
             ).all()
-            
+
             if seats:
                 seat = seats[0]
                 from src.tickets.ticket_service import TicketService
-                ticket = TicketService.purchase_ticket_with_lock(user.id, seat.id)
+                ticket = TicketService.purchase_ticket_with_lock(
+                    user.id, seat.id)
                 if ticket:
                     print(f"  ✓ User {user.id} booked seat {seat.id}")
-    
+
     print("\n📊 Reloading data to Snowflake after operations...")
     print("-"*60)
     try:
@@ -227,7 +230,7 @@ async def task4_analytics_demo():
     except Exception as e:
         print(f"❌ Error reloading: {e}")
         return
-    
+
     print("\n📈 STEP 5: UPDATED ANALYTICS REPORT (After Changes)")
     print("-"*60)
     try:
@@ -235,7 +238,7 @@ async def task4_analytics_demo():
     except Exception as e:
         print(f"❌ Error generating updated report: {e}")
         return
-    
+
     print("\n✅ Task 4 Complete - Analytics demonstrate business impact!")
 
 
@@ -255,12 +258,12 @@ async def main():
     # await task2_test4_lock_solution()
 
     # TASK 3: High-RPS & Caching Tests
-    await run_task3_tests()
+    # await run_task3_tests()
     # await task3_test3_high_traffic()
-    
+
     # TASK 4: Analytics & Data Warehousing
     # Uncomment to run analytics demo:
-    # await task4_analytics_demo()
+    await task4_analytics_demo()
 
     print("="*60 + "\n")
 

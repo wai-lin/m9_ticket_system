@@ -84,7 +84,7 @@ def load_to_snowflake_staging():
 
     try:
         # Create staging schema if not exists
-        cursor.execute("CREATE SCHEMA IF NOT EXISTS STAGING")
+        cursor.execute("CREATE SCHEMA IF NOT EXISTS TICKET")
         print("✓ Staging schema ready")
 
         # Extract data
@@ -105,9 +105,9 @@ def load_to_snowflake_staging():
         print("\n📤 Loading to Snowflake...")
         
         # Users
-        cursor.execute("DROP TABLE IF EXISTS STAGING.USERS")
+        cursor.execute("DROP TABLE IF EXISTS TICKET.USERS")
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS STAGING.USERS (
+            CREATE TABLE IF NOT EXISTS TICKET.USERS (
                 USER_ID INTEGER,
                 NAME VARCHAR(255),
                 EMAIL VARCHAR(255),
@@ -119,13 +119,13 @@ def load_to_snowflake_staging():
             name = str(row['name']).replace("'", "''")
             email = str(row['email']).replace("'", "''")
             created_at = str(row['created_at'])
-            cursor.execute(f"INSERT INTO STAGING.USERS VALUES ({user_id}, '{name}', '{email}', '{created_at}')")
+            cursor.execute(f"INSERT INTO TICKET.USERS VALUES ({user_id}, '{name}', '{email}', '{created_at}')")
         print(f"   ✓ Loaded {len(users_df)} users")
         
         # Seats
-        cursor.execute("DROP TABLE IF EXISTS STAGING.SEATS")
+        cursor.execute("DROP TABLE IF EXISTS TICKET.SEATS")
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS STAGING.SEATS (
+            CREATE TABLE IF NOT EXISTS TICKET.SEATS (
                 SEAT_ID INTEGER,
                 INSTANCE_ID INTEGER,
                 SEAT_NUMBER VARCHAR(10),
@@ -141,13 +141,13 @@ def load_to_snowflake_staging():
             class_val = str(row['class']).replace("'", "''")
             status = str(row['status']).replace("'", "''")
             extracted_at = str(row['extracted_at'])
-            cursor.execute(f"INSERT INTO STAGING.SEATS VALUES ({seat_id}, {instance_id}, '{seat_number}', '{class_val}', '{status}', '{extracted_at}')")
+            cursor.execute(f"INSERT INTO TICKET.SEATS VALUES ({seat_id}, {instance_id}, '{seat_number}', '{class_val}', '{status}', '{extracted_at}')")
         print(f"   ✓ Loaded {len(seats_df)} seats")
         
         # Tickets
-        cursor.execute("DROP TABLE IF EXISTS STAGING.TICKETS")
+        cursor.execute("DROP TABLE IF EXISTS TICKET.TICKETS")
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS STAGING.TICKETS (
+            CREATE TABLE IF NOT EXISTS TICKET.TICKETS (
                 TICKET_ID INTEGER,
                 USER_ID INTEGER,
                 SEAT_ID INTEGER,
@@ -163,13 +163,13 @@ def load_to_snowflake_staging():
             status = str(row['status']).replace("'", "''")
             price = float(row['price'])
             extracted_at = str(row['extracted_at'])
-            cursor.execute(f"INSERT INTO STAGING.TICKETS VALUES ({ticket_id}, {user_id}, {seat_id}, '{status}', {price}, '{extracted_at}')")
+            cursor.execute(f"INSERT INTO TICKET.TICKETS VALUES ({ticket_id}, {user_id}, {seat_id}, '{status}', {price}, '{extracted_at}')")
         print(f"   ✓ Loaded {len(tickets_df)} tickets")
         
         # Payments
-        cursor.execute("DROP TABLE IF EXISTS STAGING.PAYMENTS")
+        cursor.execute("DROP TABLE IF EXISTS TICKET.PAYMENTS")
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS STAGING.PAYMENTS (
+            CREATE TABLE IF NOT EXISTS TICKET.PAYMENTS (
                 PAYMENT_ID INTEGER,
                 USER_ID INTEGER,
                 TOTAL_PRICE DECIMAL(10, 2),
@@ -185,7 +185,7 @@ def load_to_snowflake_staging():
             status = str(row['status']).replace("'", "''")
             purchased_date = str(row['purchased_date'])
             extracted_at = str(row['extracted_at'])
-            cursor.execute(f"INSERT INTO STAGING.PAYMENTS VALUES ({payment_id}, {user_id}, {total_price}, '{status}', '{purchased_date}', '{extracted_at}')")
+            cursor.execute(f"INSERT INTO TICKET.PAYMENTS VALUES ({payment_id}, {user_id}, {total_price}, '{status}', '{purchased_date}', '{extracted_at}')")
         print(f"   ✓ Loaded {len(payments_df)} payments")
         
         conn.commit()
